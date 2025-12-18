@@ -1,7 +1,7 @@
-</div>
+</div> <!-- end container -->
 
-<footer class="mt-10 text-center py-4 text-sm text-gray-600">
-    Parking System © <?= date('Y'); ?>
+<footer class="bg-slate-800 text-white text-center py-3 mt-10 text-sm">
+    © <?= date('Y') ?> Sistem Parkir
 </footer>
 
 </body>

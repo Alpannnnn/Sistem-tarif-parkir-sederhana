@@ -9,72 +9,78 @@ class Transaksi_masuk extends CI_Controller {
 
         $this->load->library('session');
         $this->load->helper('url');
+        $this->load->config('parkir');
 
         if (!$this->session->userdata('logged_in')) {
             redirect('auth/login');
         }
 
         $this->load->model('Transaksi_masuk_model');
-        $this->load->model('Kendaraan_model');
-        $this->load->model('Area_model');
     }
 
     public function index()
-    {
-        $data['title'] = 'Transaksi Masuk';
-        $id_operator = $this->session->userdata('id_operator');
+{
+    $id_operator = $this->session->userdata('id_operator');
 
-        $data['list'] = $this->Transaksi_masuk_model
-            ->get_by_operator_join($id_operator);
+    $data['title'] = 'Transaksi Masuk';
+    $data['list']  = $this->Transaksi_masuk_model
+                        ->get_by_operator($id_operator);
 
-        $this->load->view('transaksi_masuk/index', $data);
-    }
+    $data['area_parkir'] = $this->config->item('area_parkir');
+
+    $this->load->view('transaksi_masuk/index', $data);
+}
 
     public function tambah()
     {
-        $data['title'] = 'Tambah Transaksi Masuk';
-        $data['kendaraan'] = $this->Kendaraan_model->get_all();
-        $data['area'] = $this->Area_model->get_all();
+    $data['title'] = 'Tambah Transaksi Masuk';
+    $data['area_parkir'] = $this->config->item('area_parkir');
 
-        $this->load->view('transaksi_masuk/form', $data);
+    $this->load->view('transaksi_masuk/form', $data);
     }
 
-    public function simpan()
+
+   public function simpan()
 {
-    $waktu_masuk = $this->input->post('waktu_masuk');
+    $plat  = strtoupper(trim($this->input->post('plat')));
+    $area  = $this->input->post('area');
+    $waktu = $this->input->post('waktu_masuk');
+    $jenis = $this->input->post('jenis_kendaraan');
+    $member = $this->input->post('is_member') ? 1 : 0;
 
-    $today = strtotime(date('Y-m-d 00:00:00'));
-    $input = strtotime($waktu_masuk);
-
-    // ❌ sebelum hari ini
-    if ($input < $today) {
-        $this->session->set_flashdata(
-            'error',
-            'Waktu masuk tidak boleh sebelum hari ini.'
-        );
+    if (!$plat || !$area || !$waktu || !$jenis) {
+        $this->session->set_flashdata('error', 'Data tidak lengkap');
         redirect('transaksi_masuk/tambah');
     }
 
-    $data = [
-        'id_operator' => $this->session->userdata('id_operator'),
-        'id_area'     => $this->input->post('id_area'),
-        'plat'        => $this->input->post('plat'),
-        'waktu_masuk' => date('Y-m-d H:i:s', $input),
-        'status'      => 'IN'
-    ];
-
-    $this->Transaksi_masuk_model->insert($data);
-    redirect('transaksi_masuk');
+    if ($this->Transaksi_masuk_model->cekMasihParkir($plat)) {
+        $this->session->set_flashdata('error', 'Kendaraan masih parkir');
+        redirect('transaksi_masuk/tambah');
     }
 
+    $this->Transaksi_masuk_model->insert([
+        'id_operator'     => $this->session->userdata('id_operator'),
+        'area'            => $area,
+        'plat'            => $plat,
+        'waktu_masuk'     => $waktu,
+        'jenis_kendaraan' => $jenis,
+        'is_member'       => $member,
+        'status'          => 'IN'
+    ]);
 
-    // ❌ TIDAK ADA DELETE
-    public function hapus($id)
-    {
-        $this->session->set_flashdata(
-            'error',
-            'Transaksi masuk tidak boleh dihapus. Silakan lakukan Transaksi Keluar.'
-        );
-        redirect('transaksi_masuk');
-    }
+    redirect('transaksi_masuk/riwayat');
+}
+
+
+    public function riwayat()
+{
+    $id_operator = $this->session->userdata('id_operator');
+
+    $data['title'] = 'Riwayat Transaksi Masuk';
+    $data['list']  = $this->Transaksi_masuk_model
+                            ->get_by_operator($id_operator);
+
+    $this->load->view('transaksi_masuk/riwayat', $data);
+}
+
 }

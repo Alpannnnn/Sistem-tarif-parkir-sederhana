@@ -53,5 +53,7 @@ $route['default_controller'] = 'auth/login';
 $route['login']  = 'auth/login';
 $route['logout'] = 'auth/logout';
 $route['dashboard'] = 'dashboard/index';
+$route['transaksi_masuk/tambah'] = 'Transaksi_masuk/tambah';
+$route['transaksi_masuk'] = 'Transaksi_masuk/index';
 $route['404_override'] = '';
 $route['translate_uri_dashes'] = FALSE;

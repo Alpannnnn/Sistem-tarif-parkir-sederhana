@@ -1,104 +1,165 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title><?= $title ?></title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
+<?php $this->load->view('template/header'); ?>
 
-<body class="bg-gray-100 p-10">
+<div class="max-w-3xl mx-auto bg-white p-6 shadow rounded">
 
-<div class="max-w-xl mx-auto bg-white p-6 rounded shadow">
+    <h1 class="text-2xl font-bold mb-4"><?php echo $title; ?></h1>
 
-    <h1 class="text-2xl font-bold mb-4"><?= $title ?></h1>
+    <?php if ($this->session->flashdata('error')): ?>
+        <div class="mb-4 p-3 bg-red-100 text-red-700 rounded">
+            <?php echo $this->session->flashdata('error'); ?>
+        </div>
+    <?php endif; ?>
 
-    <form method="post" action="<?= site_url('transaksi_keluar/simpan') ?>">
+    <form method="post" action="<?php echo site_url('transaksi_keluar/simpan'); ?>">
 
-        <input type="hidden" name="id_masuk" value="<?= $masuk->id_masuk ?>">
-        <input type="hidden" name="durasi" id="durasi">
+        <input type="hidden" name="id_masuk" value="<?php echo $masuk->id_masuk; ?>">
 
-        <!-- DATA -->
-        <p><strong>Plat:</strong> <?= $masuk->plat ?></p>
-        <p><strong>Jenis:</strong> <?= $master_kendaraan->jenis ?></p>
-        <p><strong>Waktu Masuk:</strong> <?= $masuk->waktu_masuk ?></p>
+        <!-- PLAT -->
+        <div class="mb-4">
+            <label class="block font-semibold mb-1">Plat Kendaraan</label>
+            <input type="text"
+                   value="<?php echo $masuk->plat; ?>"
+                   class="w-full border rounded p-2 bg-gray-100"
+                   readonly>
+        </div>
 
-        <!-- SIMPAN KE JS -->
-        <input type="hidden" id="waktu_masuk" value="<?= $masuk->waktu_masuk ?>">
-        <input type="hidden" id="jenis" value="<?= $master_kendaraan->jenis ?>">
+        <!-- JENIS KENDARAAN -->
+        <div class="mb-4">
+            <label class="block font-semibold mb-1">Jenis Kendaraan</label>
+            <input type="text"
+                   value="<?php echo $masuk->jenis_kendaraan; ?>"
+                   class="w-full border rounded p-2 bg-gray-100"
+                   readonly>
+        </div>
 
-        <hr class="my-4">
+        <!-- JENIS KENDARAAN (HIDDEN UNTUK JS) -->
+        <input type="hidden" id="jenis_kendaraan" value="<?php echo $masuk->jenis_kendaraan; ?>">
 
-        <!-- INPUT MANUAL -->
-        <label class="font-semibold">Waktu Keluar</label>
-        <input type="datetime-local"
-               name="waktu_keluar"
-               id="waktu_keluar"
-               class="w-full p-2 border rounded mb-4"
-               required>
+        <!-- WAKTU MASUK -->
+        <div class="mb-4">
+            <label class="block font-semibold mb-1">Waktu Masuk</label>
+            <input type="text"
+                   id="waktu_masuk"
+                   value="<?php echo $masuk->waktu_masuk; ?>"
+                   class="w-full border rounded p-2 bg-gray-100"
+                   readonly>
+        </div>
 
-        <!-- HASIL -->
-        <p><strong>Tarif / Jam:</strong> Rp <span id="tarif">0</span></p>
-        <p><strong>Durasi:</strong> <span id="durasi_text">0</span> Jam</p>
+        <!-- WAKTU KELUAR -->
+        <div class="mb-4">
+            <label class="block font-semibold mb-1">Waktu Keluar</label>
+            <input type="datetime-local"
+                   name="waktu_keluar"
+                   id="waktu_keluar"
+                   required
+                   class="w-full border rounded p-2">
+        </div>
 
-        <label class="font-semibold mt-2 block">Total Biaya</label>
-        <input type="text"
-               name="total_biaya"
-               id="total_biaya"
-               class="w-full p-2 border rounded mb-4"
-               readonly>
+        <!-- STATUS MEMBER -->
+        <div class="mb-4">
+            <label class="block font-semibold mb-1">Status Member</label>
+            <input type="text"
+                   id="status_member"
+                   value="<?php echo ($masuk->is_member == 1) ? 'MEMBER (Diskon 50%)' : 'Non Member'; ?>"
+                   class="w-full border rounded p-2 bg-gray-100"
+                   readonly>
+        </div>
 
-        <button class="px-4 py-2 bg-green-600 text-white rounded">
-            Simpan
-        </button>
+        <!-- INFO LOGIC -->
+        <div class="mb-4">
+            <label class="block font-semibold mb-1">Kategori Hari</label>
+            <input type="text"
+                   id="kategori_hari"
+                   class="w-full border rounded p-2 bg-gray-100"
+                   readonly>
+        </div>
 
-        <a href="<?= site_url('transaksi_keluar') ?>"
-           class="px-4 py-2 ml-2 bg-gray-500 text-white rounded">
-            Kembali
-        </a>
+        <!-- INFO LIVE -->
+        <div class="mb-6 p-4 bg-gray-50 border rounded">
+            <div class="mb-2">
+                <strong>Durasi Parkir:</strong>
+                <span id="durasi">0</span> jam
+            </div>
+            <div>
+                <strong>Total Tarif:</strong>
+                <span id="tarif">Rp 0</span>
+            </div>
+        </div>
+
+        <!-- BUTTON -->
+        <div class="flex gap-3">
+            <button type="submit"
+                    class="px-5 py-2 bg-green-600 hover:bg-green-700 text-white rounded">
+                Simpan
+            </button>
+
+            <a href="<?php echo site_url('transaksi_keluar'); ?>"
+               class="px-5 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded">
+                Batal
+            </a>
+        </div>
 
     </form>
-
 </div>
 
-<!-- 🔥 SCRIPT HITUNG OTOMATIS -->
 <script>
-document.getElementById('waktu_keluar').addEventListener('change', hitungBiaya);
+document.addEventListener('DOMContentLoaded', function () {
 
-function hitungBiaya() {
+    const inputKeluar = document.getElementById('waktu_keluar');
+    const waktuMasuk  = new Date(
+        document.getElementById('waktu_masuk').value.replace(' ', 'T')
+    );
 
-    const masuk = new Date(document.getElementById('waktu_masuk').value);
-    const keluar = new Date(document.getElementById('waktu_keluar').value);
-    const jenis = document.getElementById('jenis').value;
+    const jenis    = document.getElementById('jenis_kendaraan').value;
+    const isMember = document.getElementById('status_member').value.includes('MEMBER');
 
-    // validasi waktu
-    if (keluar <= masuk) {
-        alert('Waktu keluar harus lebih besar dari waktu masuk');
-        return;
+    function setNow() {
+        const now = new Date();
+        const offset = now.getTimezoneOffset() * 60000;
+        inputKeluar.value = new Date(now - offset).toISOString().slice(0,16);
+        hitung();
     }
 
-    // hitung durasi
-    const selisihMs = keluar - masuk;
-    const durasi = Math.ceil(selisihMs / (1000 * 60 * 60));
+    function hitung() {
+        if (!inputKeluar.value) return;
 
-    // weekend?
-    const hari = keluar.getDay(); // 0 minggu
-    const weekend = (hari === 0 || hari === 6);
+        const keluar = new Date(inputKeluar.value);
 
-    let tarif = 0;
-    if (jenis === 'Motor') {
-        tarif = weekend ? 7000 : 5000;
-    } else {
-        tarif = weekend ? 15000 : 10000;
+        if (keluar <= waktuMasuk) {
+            document.getElementById('durasi').innerText = '0';
+            document.getElementById('tarif').innerText  = 'Rp 0';
+            document.getElementById('kategori_hari').value = '-';
+            return;
+        }
+
+        const durasi = Math.ceil((keluar - waktuMasuk) / (1000 * 60 * 60));
+        const hari = keluar.getDay();
+        const isWeekend = (hari === 0 || hari === 6);
+
+        document.getElementById('kategori_hari').value =
+            isWeekend ? 'Weekend' : 'Weekday';
+
+        let tarifPerJam = 0;
+        if (jenis === 'Motor') {
+            tarifPerJam = isWeekend ? 7000 : 5000;
+        } else {
+            tarifPerJam = isWeekend ? 15000 : 10000;
+        }
+
+        let total = tarifPerJam * durasi;
+
+        if (isMember) {
+            total = total * 0.5;
+        }
+
+        document.getElementById('durasi').innerText = durasi;
+        document.getElementById('tarif').innerText =
+            'Rp ' + total.toLocaleString('id-ID');
     }
 
-    const total = durasi * tarif;
-
-    // tampilkan
-    document.getElementById('tarif').innerText = tarif.toLocaleString();
-    document.getElementById('durasi_text').innerText = durasi;
-    document.getElementById('durasi').value = durasi;
-    document.getElementById('total_biaya').value = total;
-}
+    setNow();
+    inputKeluar.addEventListener('input', hitung);
+});
 </script>
 
-</body>
-</html>
+<?php $this->load->view('template/footer'); ?>

@@ -9,40 +9,47 @@ class Transaksi_keluar extends CI_Controller {
 
         $this->load->model('Transaksi_keluar_model');
         $this->load->model('Transaksi_masuk_model');
-        $this->load->model('Kendaraan_model');
         $this->load->library('session');
         $this->load->helper('url');
 
-        // 🔐 PROTEKSI LOGIN
         if (!$this->session->userdata('logged_in')) {
-            redirect('login');
+            redirect('auth/login');
         }
     }
 
     // 🚗 LIST KENDARAAN MASIH PARKIR
     public function index()
-    {
-        $data['title'] = 'Transaksi Keluar';
-        $id_operator   = $this->session->userdata('id_operator');
+{
+    $data['title'] = 'Transaksi Keluar';
+    $id_operator   = $this->session->userdata('id_operator');
 
-        // ✅ FIX: pakai MODEL, bukan query mentah
-        $data['list'] = $this->Transaksi_masuk_model
-            ->get_by_operator_join($id_operator);
+    $data['list'] = $this->Transaksi_masuk_model
+        ->get_by_operator($id_operator);
 
-        $this->load->view('transaksi_keluar/index', $data);
-    }
+    // ✅ FIX AREA TANPA UBAH LOGIC
+    $data['area_parkir'] = [
+        'A' => 'Rooftop',
+        'B' => 'Basement'
+    ];
+
+    $this->load->view('transaksi_keluar/index', $data);
+}
+
 
     // 🔄 FORM PROSES
     public function proses($id)
     {
-        $data['title'] = "Proses Transaksi Keluar";
+        $data['area_parkir'] = [
+        'A' => 'Rooftop',
+        'B' => 'Basement'
+        ];
+        $data['title'] = 'Proses Transaksi Keluar';
         $data['masuk'] = $this->Transaksi_masuk_model->get_by_id($id);
 
         if (!$data['masuk']) {
             show_404();
         }
 
-        // 🔒 VALIDASI OPERATOR
         if ($data['masuk']->id_operator != $this->session->userdata('id_operator')) {
             show_error('Akses ditolak', 403);
         }
@@ -52,36 +59,29 @@ class Transaksi_keluar extends CI_Controller {
             redirect('transaksi_keluar');
         }
 
-        $data['master_kendaraan'] =
-            $this->Kendaraan_model->get_by_plat($data['masuk']->plat);
-
         $this->load->view('transaksi_keluar/proses', $data);
     }
 
-    // 💾 SIMPAN
+    // 💾 SIMPAN TRANSAKSI KELUAR
     public function simpan()
     {
         $id_masuk     = $this->input->post('id_masuk');
         $waktu_keluar = $this->input->post('waktu_keluar');
-        $id_operator  = $this->session->userdata('id_operator');
 
         $masuk = $this->Transaksi_masuk_model->get_by_id($id_masuk);
 
-        if (!$masuk || $masuk->status === 'OUT') {
-            redirect('transaksi_keluar');
-        }
-
-        if ($masuk->id_operator != $id_operator) {
-            show_error('Akses ditolak', 403);
+        if (!$masuk) {
+            show_error('Data tidak ditemukan');
         }
 
         $start = strtotime($masuk->waktu_masuk);
         $end   = strtotime($waktu_keluar);
 
+        // ❌ VALIDASI WAKTU
         if ($end <= $start) {
             $this->session->set_flashdata(
                 'error',
-                'Waktu keluar harus setelah waktu masuk.'
+                'Waktu keluar tidak boleh sebelum waktu masuk'
             );
             redirect('transaksi_keluar/proses/'.$id_masuk);
         }
@@ -89,41 +89,48 @@ class Transaksi_keluar extends CI_Controller {
         // ⏱ DURASI
         $durasi = ceil(($end - $start) / 3600);
 
-        $kendaraan = $this->Kendaraan_model->get_by_plat($masuk->plat);
-        $is_weekend = in_array(date('N', $end), [6,7]);
+        // 📆 WEEKEND / WEEKDAY
+        $is_weekend = date('N', $end) >= 6;
 
-        $tarif = ($kendaraan->jenis == 'Motor')
-            ? ($is_weekend ? 7000 : 5000)
-            : ($is_weekend ? 15000 : 10000);
+        // 💰 TARIF DASAR
+        if ($masuk->jenis_kendaraan == 'Motor') {
+            $tarif = $is_weekend ? 7000 : 5000;
+        } else { // Mobil
+            $tarif = $is_weekend ? 15000 : 10000;
+        }
 
-        $data = [
+        // 🎟 DISKON MEMBER
+        if ($masuk->is_member == 1) {
+            $tarif = $tarif * 0.5;
+        }
+
+        // 💾 SIMPAN TRANSAKSI KELUAR
+        $this->Transaksi_keluar_model->insert([
             'id_masuk'     => $id_masuk,
-            'plat'         => $masuk->plat,
-            'durasi'       => $durasi,
-            'total_biaya'  => $durasi * $tarif,
             'waktu_keluar' => date('Y-m-d H:i:s', $end),
-            'id_operator'  => $id_operator
-        ];
+            'durasi'       => $durasi,
+            'tarif'        => $tarif,
+            'is_member'    => $masuk->is_member
+        ]);
 
-        // 🔥 TRANSAKSI AMAN
-        $this->db->trans_start();
-        $this->Transaksi_keluar_model->insert($data);
-        $this->Transaksi_masuk_model->set_out($id_masuk);
-        $this->db->trans_complete();
+        // 🔄 UPDATE STATUS MASUK
+        $this->Transaksi_masuk_model
+        ->update_status($id_masuk, 'OUT');
 
-        redirect('transaksi_keluar/riwayat');
+
+        redirect('transaksi_keluar');
     }
 
     // 📜 RIWAYAT
     public function riwayat()
     {
-        $data['title'] = "Riwayat Transaksi Keluar";
-        $data['list']  =
-            $this->Transaksi_keluar_model
-            ->get_history_by_operator(
-                $this->session->userdata('id_operator')
-            );
+    $data['title'] = 'Riwayat Transaksi Keluar';
+    $data['list']  = $this->Transaksi_keluar_model
+        ->get_history_by_operator(
+            $this->session->userdata('id_operator')
+        );
 
-        $this->load->view('transaksi_keluar/riwayat', $data);
+    $this->load->view('transaksi_keluar/riwayat', $data);
     }
+
 }

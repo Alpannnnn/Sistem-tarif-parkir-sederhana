@@ -27,7 +27,6 @@
 
         <!-- LOGO / TITLE -->
         <div class="text-center mb-6">
-            <div class="text-4xl mb-2">🅿️</div>
             <h2 class="text-2xl font-bold text-gray-800">Login Operator</h2>
             <p class="text-sm text-gray-500">Sistem Parkir</p>
         </div>

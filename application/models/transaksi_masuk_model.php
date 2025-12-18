@@ -3,40 +3,37 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 class Transaksi_masuk_model extends CI_Model {
 
-    protected $table = "transaksi_masuk";
+    protected $table = 'transaksi_masuk';
 
     /* =====================
        GET DATA
        ===================== */
 
-    // transaksi masuk per operator (HANYA YANG MASIH PARKIR)
-    public function get_by_operator_join($id_operator)
+    public function get_all()
     {
         return $this->db
-            ->select('tm.*, k.jenis, k.merk, ap.nama_area')
-            ->from('transaksi_masuk tm')
-            ->join('master_kendaraan k', 'k.plat = tm.plat', 'left')
-            ->join('master_area ap', 'ap.id_area = tm.id_area', 'left')
-            ->where('tm.id_operator', $id_operator)
-            ->where('tm.status', 'in') // 🔥 FIX
-            ->order_by('tm.id_masuk', 'DESC')
+            ->select('id_masuk, plat, area, waktu_masuk, status')
+            ->from($this->table)
+            ->order_by('id_masuk', 'DESC')
             ->get()
             ->result();
     }
 
-    // kendaraan masih parkir
-    public function get_kendaraan_masuk()
-    {
-        return $this->db
-            ->select('tm.*, k.jenis, k.merk')
-            ->from('transaksi_masuk tm')
-            ->join('master_kendaraan k', 'k.plat = tm.plat', 'left')
-            ->where('tm.status', 'in') // 🔥 FIX
-            ->order_by('tm.id_masuk', 'DESC')
-            ->get()
-            ->result();
-    }
+    // 🚗 kendaraan masih parkir per operator
+    public function get_by_operator($id_operator)
+{
+    return $this->db
+        ->select('tm.*')
+        ->from('transaksi_masuk tm')
+        ->where('tm.id_operator', $id_operator)
+        ->where('tm.status', 'IN')
+        ->order_by('tm.id_masuk', 'DESC')
+        ->get()
+        ->result();
+}
 
+
+    // by id
     public function get_by_id($id)
     {
         return $this->db
@@ -51,8 +48,7 @@ class Transaksi_masuk_model extends CI_Model {
 
     public function insert($data)
     {
-        // pastikan status selalu in
-        $data['status'] = 'in';
+        $data['status'] = 'IN';
         return $this->db->insert($this->table, $data);
     }
 
@@ -60,13 +56,34 @@ class Transaksi_masuk_model extends CI_Model {
        VALIDASI
        ===================== */
 
-    public function sudah_keluar($id_masuk)
+    // ❌ kendaraan masih parkir
+    public function cekMasihParkir($plat)
     {
         return $this->db
-            ->where('id_masuk', $id_masuk)
-            ->where('status', 'out') // 🔥 FIX
+            ->where('plat', $plat)
+            ->where('status', 'IN')
             ->count_all_results($this->table) > 0;
     }
+
+    public function update_status($id_masuk, $status)
+    {
+    $this->db->where('id_masuk', $id_masuk);
+    return $this->db->update('transaksi_masuk', [
+        'status' => $status
+    ]);
+    }
+
+    public function get_riwayat($id_operator)
+    {
+    return $this->db
+        ->where('id_operator', $id_operator)
+        ->order_by('id_masuk', 'DESC')
+        ->get('transaksi_masuk')
+        ->result();
+    }
+
+
+
 
     /* =====================
        UPDATE STATUS
@@ -76,6 +93,6 @@ class Transaksi_masuk_model extends CI_Model {
     {
         return $this->db
             ->where('id_masuk', $id_masuk)
-            ->update($this->table, ['status' => 'out']); // 🔥 FIX
+            ->update($this->table, ['status' => 'OUT']);
     }
 }
