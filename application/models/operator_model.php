@@ -7,7 +7,10 @@ class Operator_model extends CI_Model {
 
     public function get_all()
     {
-        return $this->db->get($this->table)->result();
+        return $this->db
+            ->where('is_active', 1)
+            ->get($this->table)
+            ->result();
     }
 
     public function insert($data)
@@ -15,9 +18,14 @@ class Operator_model extends CI_Model {
         return $this->db->insert($this->table, $data);
     }
 
+    // ✅ UBAH: Hanya ambil operator aktif by ID
     public function get_by_id($id)
     {
-        return $this->db->where('id_operator', $id)->get($this->table)->row();
+        return $this->db
+            ->where('id_operator', $id)
+            ->where('is_active', 1)
+            ->get($this->table)
+            ->row();
     }
 
     public function update($id, $data)
@@ -25,9 +33,12 @@ class Operator_model extends CI_Model {
         return $this->db->where('id_operator', $id)->update($this->table, $data);
     }
 
+    // ✅ UBAH: Soft delete (set is_active = 0)
     public function delete($id)
     {
-        return $this->db->where('id_operator', $id)->delete($this->table);
+        return $this->db
+            ->where('id_operator', $id)
+            ->update($this->table, ['is_active' => 0]);
     }
 
     public function get_by_username($username)
@@ -35,9 +46,13 @@ class Operator_model extends CI_Model {
         return $this->db->get_where($this->table, ['username' => $username])->row();
     }
 
-    // login – ambil user, verifikasi password di controller
+    // ✅ UBAH: Login hanya untuk operator aktif
     public function cek_login($username)
     {
-        return $this->db->get_where($this->table, ['username' => $username])->row();
+        return $this->db
+            ->where('username', $username)
+            ->where('is_active', 1)
+            ->get($this->table)
+            ->row();
     }
 }

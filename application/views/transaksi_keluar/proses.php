@@ -5,10 +5,11 @@
     <h1 class="text-2xl font-bold mb-4"><?php echo $title; ?></h1>
 
     <?php if ($this->session->flashdata('error')): ?>
-        <div class="mb-4 p-3 bg-red-100 text-red-700 rounded">
-            <?php echo $this->session->flashdata('error'); ?>
-        </div>
-    <?php endif; ?>
+    <div style="background:#fee2e2;color:#991b1b;padding:10px;border-radius:6px;margin-bottom:15px;">
+        <?= $this->session->flashdata('error'); ?>
+    </div>
+<?php endif; ?>
+
 
     <form method="post" action="<?php echo site_url('transaksi_keluar/simpan'); ?>">
 

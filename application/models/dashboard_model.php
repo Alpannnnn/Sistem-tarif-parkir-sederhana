@@ -9,7 +9,9 @@ class Dashboard_model extends CI_Model {
 
     public function getTotalOperator()
     {
-        return (int) $this->db->count_all('master_operator');
+        return (int) $this->db
+            ->where('is_active', 1)
+            ->count_all_results('master_operator');
     }
 
     /* =====================
@@ -30,24 +32,17 @@ class Dashboard_model extends CI_Model {
     }
 
     // 🔁 transaksi hari ini (IN + OUT)
-    public function getTransaksiHariIniByOperator($id_operator)
-    {
-        $today = date('Y-m-d');
+    // 🔁 transaksi hari ini (hitung dari kendaraan masuk)
+public function getTransaksiHariIniByOperator($id_operator)
+{
+    $today = date('Y-m-d');
 
-        $masuk = $this->db
-            ->from('transaksi_masuk')
-            ->where('DATE(waktu_masuk)', $today)
-            ->where('id_operator', $id_operator)
-            ->count_all_results();
-
-        $keluar = $this->db
-            ->from('transaksi_keluar')
-            ->where('DATE(waktu_keluar)', $today)
-            ->where('id_operator', $id_operator)
-            ->count_all_results();
-
-        return (int) ($masuk + $keluar);
-    }
+    return (int) $this->db
+        ->from('transaksi_masuk')
+        ->where('DATE(waktu_masuk)', $today)
+        ->where('id_operator', $id_operator)
+        ->count_all_results();
+}
 
     // 💰 pendapatan hari ini
     public function getPendapatanHariIniByOperator($id_operator)
