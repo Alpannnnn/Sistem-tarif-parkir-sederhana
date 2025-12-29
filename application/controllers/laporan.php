@@ -100,32 +100,85 @@ class Laporan extends CI_Controller {
     // =======================
     // EXPORT EXCEL
     // =======================
-    public function export_excel()
-    {
-        $filter = array();
+public function export_excel()
+{
+    $filter = array();
 
-        if ($this->input->get('tanggal')) {
-            $filter['tanggal'] = $this->input->get('tanggal');
-        }
-
-        if ($this->input->get('bulan')) {
-            $filter['bulan'] = $this->input->get('bulan');
-        }
-
-        if ($this->session->userdata('role') !== 'admin') {
-            $filter['id_operator'] = $this->session->userdata('id_operator');
-        }
-
-        $laporan   = $this->Laporan_model->get_laporan($filter);
-        $ringkasan = $this->Laporan_model->get_ringkasan($filter);
-
-        header("Content-Type: application/vnd.ms-excel");
-        header("Content-Disposition: attachment; filename=Laporan_Parkir.xls");
-        header("Pragma: no-cache");
-        header("Expires: 0");
-
-        // 👉 kalau mau, nanti kita isi tabel excel di sini
-        echo "Export Excel belum diisi";
-        exit;
+    if ($this->input->get('tanggal')) {
+        $filter['tanggal'] = $this->input->get('tanggal');
     }
+
+    if ($this->input->get('bulan')) {
+        $filter['bulan'] = $this->input->get('bulan');
+    }
+
+    if ($this->session->userdata('role') !== 'admin') {
+        $filter['id_operator'] = $this->session->userdata('id_operator');
+    }
+
+    $laporan   = $this->Laporan_model->get_laporan($filter);
+    $ringkasan = $this->Laporan_model->get_ringkasan($filter);
+
+    header("Content-Type: text/csv; charset=UTF-8");
+    header("Content-Disposition: attachment; filename=laporan_parkir.csv");
+    echo "\xEF\xBB\xBF";
+    
+    $out = fopen("php://output", "w");
+    
+    fputcsv($out, array(
+        'No', 'Plat', 'Jenis Kendaraan', 'Operator',
+        'Waktu Masuk', 'Waktu Keluar', 'Durasi', 'Tarif', 'Member'
+    ), ';');
+    
+    $no = 1;
+    foreach ($laporan as $row) {
+        fputcsv($out, array(
+            $no++,
+            $row->plat,
+            $row->jenis_kendaraan,
+            $row->operator_nama,
+            $row->waktu_masuk,
+            $row->waktu_keluar,
+            $row->durasi,
+            'Rp ' . number_format($row->tarif, 0, ',', '.'),
+            $row->is_member == 1 ? 'Ya' : 'Tidak'
+        ), ';');
+    }
+    
+    fputcsv($out, array(), ';');
+    fputcsv($out, array('RINGKASAN'), ';');
+    fputcsv($out, array(
+        '', '', '', '', '', '', 
+        'Total Transaksi', 
+        $ringkasan->total_transaksi
+    ), ';');
+    fputcsv($out, array(
+        '', '', '', '', '', '', 
+        'Total Motor', 
+        $ringkasan->total_motor
+    ), ';');
+    fputcsv($out, array(
+        '', '', '', '', '', '', 
+        'Total Mobil', 
+        $ringkasan->total_mobil
+    ), ';');
+    fputcsv($out, array(
+        '', '', '', '', '', '', 
+        'Total Member', 
+        $ringkasan->total_member
+    ), ';');
+    fputcsv($out, array(
+        '', '', '', '', '', '', 
+        'Total Durasi', 
+        $ringkasan->total_durasi . ' menit'
+    ), ';');
+    fputcsv($out, array(
+        '', '', '', '', '', '', 
+        'Total Pendapatan', 
+        'Rp ' . number_format($ringkasan->total_pendapatan, 0, ',', '.')
+    ), ';');
+    
+    fclose($out);
+    exit;
+}
 }
