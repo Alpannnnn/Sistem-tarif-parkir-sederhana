@@ -42,22 +42,31 @@ class Transaksi_masuk extends CI_Controller {
 
    public function simpan()
 {
-    $plat  = strtoupper(trim($this->input->post('plat')));
-    $area  = $this->input->post('area');
-    $waktu = $this->input->post('waktu_masuk');
-    $jenis = $this->input->post('jenis_kendaraan');
+    $plat   = strtoupper(trim($this->input->post('plat')));
+    $area   = $this->input->post('area');
+    $waktu  = $this->input->post('waktu_masuk');
+    $jenis  = $this->input->post('jenis_kendaraan');
     $member = $this->input->post('is_member') ? 1 : 0;
 
+    // VALIDASI KELENGKAPAN DATA
     if (!$plat || !$area || !$waktu || !$jenis) {
         $this->session->set_flashdata('error', 'Data tidak lengkap');
         redirect('transaksi_masuk/tambah');
     }
 
+    // --- VALIDASI TAMBAHAN: Waktu tidak boleh sebelum hari ini ---
+    if (strtotime($waktu) < strtotime(date('Y-m-d H:i'))) {
+        $this->session->set_flashdata('error', 'Waktu masuk tidak boleh sebelum waktu sekarang');
+        redirect('transaksi_masuk/tambah');
+    }
+
+    // VALIDASI MASIH PARKIR
     if ($this->Transaksi_masuk_model->cekMasihParkir($plat)) {
         $this->session->set_flashdata('error', 'Kendaraan masih parkir');
         redirect('transaksi_masuk/tambah');
     }
 
+    // LOGIC INSERT (TETAP SAMA)
     $this->Transaksi_masuk_model->insert([
         'id_operator'     => $this->session->userdata('id_operator'),
         'area'            => $area,

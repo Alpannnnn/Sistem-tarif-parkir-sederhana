@@ -6,6 +6,7 @@ class Laporan extends CI_Controller {
     public function __construct()
     {
         parent::__construct();
+        $this->load->library('session');
         $this->load->model('Laporan_model');
         $this->load->model('Operator_model');
 
@@ -170,7 +171,7 @@ public function export_excel()
     fputcsv($out, array(
         '', '', '', '', '', '', 
         'Total Durasi', 
-        $ringkasan->total_durasi . ' menit'
+        $ringkasan->total_durasi . ' Jam'
     ), ';');
     fputcsv($out, array(
         '', '', '', '', '', '', 

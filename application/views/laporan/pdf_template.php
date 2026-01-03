@@ -44,7 +44,12 @@ if (!empty($filter['tanggal'])) {
 ?>
 </p>
 
-<p><strong>Dicetak:</strong> <?php echo date('d/m/Y H:i:s'); ?></p>
+<p><strong>Dicetak:</strong> 
+    <?php 
+        date_default_timezone_set('Asia/Jakarta'); 
+        echo date('d/m/Y H:i:s'); 
+    ?>
+</p>
 
 <hr>
 

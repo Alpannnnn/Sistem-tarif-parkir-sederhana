@@ -16,11 +16,17 @@ class Dashboard extends CI_Controller {
 
     public function index()
     {
-        $data['title'] = 'Dashboard';
+        // Pastikan timezone sinkron agar filter "Hari Ini" tidak meleset
+        date_default_timezone_set('Asia/Jakarta');
 
+        $data['title'] = 'Dashboard';
         $id_operator = $this->session->userdata('id_operator');
 
-        // ambil data dari MODEL
+        // Jika id_operator kosong karena session habis, tendang ke login
+        if (!$id_operator) {
+            redirect('login');
+        }
+
         $data['total_kendaraan']           = $this->Dashboard_model->getTotalKendaraanByOperator($id_operator);
         $data['total_transaksi_hari_ini']  = $this->Dashboard_model->getTransaksiHariIniByOperator($id_operator);
         $data['total_pendapatan_hari_ini'] = $this->Dashboard_model->getPendapatanHariIniByOperator($id_operator);
